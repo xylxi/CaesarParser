@@ -16,6 +16,7 @@ public protocol Deserializable {
 }
 
 /// Use for Primitive Type
+// @my: 转化，如果有值返回值，如果没有返回nil
 public protocol Convertible {
     static func convert(json: JSONObject) -> Self?
 }
@@ -32,20 +33,39 @@ struct Deserialization {
     }
 
     // MARK: - Convertible Type Deserialization
-
+    /**
+    为可选类型的成员变量赋值
+    
+    - parameter property:   成员变量
+    - parameter jsonObject: value
+    
+    - returns: 如果有值赋值给成员，如果没有成员为nil
+    T ：范型
+    String?   T-->String
+    Int?      T-->Int
+    */
     static func convertAndAssign<T: Convertible>(inout property: T?, fromJSONObject jsonObject: JSONObject?) -> T? {
         if let data: JSONObject = convertToNilIfNull(jsonObject), convertedValue = T.convert(data) {
             property = convertedValue
         } else {
             property = nil
         }
+        print("property->\(property)")
         return property
     }
-
+    /**
+     如果成员不是可选类型，则赋值走这个方法
+     - parameter property:   成员
+     - parameter jsonObject: 字典key的value
+     - returns: 如果有value，赋值给成员，否则成员不变
+     */
     static func convertAndAssign<T: Convertible>(inout property: T, fromJSONObject jsonObject: JSONObject?) -> T {
         var newValue: T?
         Deserialization.convertAndAssign(&newValue, fromJSONObject: jsonObject)
-        if let newValue = newValue { property = newValue }
+        if let newValue = newValue {
+            property = newValue
+        }
+        print(property)
         return property
     }
 
@@ -71,8 +91,17 @@ struct Deserialization {
     }
 
     // MARK: - Custom Type Deserialization
-
+    /**
+    将字典的值赋值给对象的成员
+    
+    - parameter instance:   对象
+    - parameter jsonObject: 字典
+    
+    - returns: 返回对象或者nil
+    */
     static func convertAndAssign<T: Deserializable>(inout instance: T?, fromJSONObject jsonObject: JSONObject?) -> T? {
+        print(instance)
+        print(jsonObject)
         if let data = convertToNilIfNull(jsonObject) as? JSONDictionary {
             instance = T(json: data)
         } else {
@@ -213,10 +242,12 @@ struct Deserialization {
 }
 
 // MARK: - Operator for use in deserialization operations.
-
+// @my: 关于运算符的解析，包括结合性＋优先型 
+//      http://nshipster.cn/swift-operators/
 infix operator <-- { associativity right precedence 150 }
 
 // MARK: - Convertible Type Deserialization
+// @my: 遵守Convertible协议的走下面
 
 public func <-- <T: Convertible>(inout property: T?, jsonObject: JSONObject?) -> T? {
     return Deserialization.convertAndAssign(&property, fromJSONObject: jsonObject)
@@ -235,7 +266,7 @@ public func <-- <T: Convertible>(inout array: [T], jsonObject: JSONObject?) -> [
 }
 
 // MARK: - Custom Type Deserialization
-
+// @my: 遵守Deserializable协议的走下面
 public func <-- <T: Deserializable>(inout instance: T?, jsonObject: JSONObject?) -> T? {
     return Deserialization.convertAndAssign(&instance, fromJSONObject: jsonObject)
 }

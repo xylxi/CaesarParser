@@ -32,8 +32,12 @@ struct Serialization {
 
     static func convertAndAssign<T: Serializable>(properties: [T]?, inout toJSONObject jsonObject: JSONObject?) -> JSONObject? {
         if let properties = properties {
-            jsonObject = properties.map { p in p.toJSONObject() }
+            print(properties)
+            jsonObject = properties.map { p in
+                p.toJSONObject()
+            }
         }
+        print(jsonObject)
         return jsonObject
     }
 
@@ -72,6 +76,9 @@ struct Serialization {
 
 infix operator --> { associativity right precedence 150 }
 
+/**
+ 前两个方法是遵守Serializable协议的对象会走这里
+ */
 public func --> <T: Serializable>(property: T?, inout jsonObject: JSONObject?) -> JSONObject? {
     return Serialization.convertAndAssign(property, toJSONObject: &jsonObject)
 }
@@ -80,10 +87,24 @@ public func --> <T: Serializable>(properties: [T]?, inout jsonObject: JSONObject
     return Serialization.convertAndAssign(properties, toJSONObject: &jsonObject)
 }
 
+/**
+ 对象是[String : AnyObject]字典类型的
+ CustomStringConvertible协议
+ 返回对对象的描述信息
+ Hashable协议
+ 获得哈希值
+
+ U->Key
+ T->Value
+ */
 public func --> <T, U where T: Serializable, U: CustomStringConvertible, U: Hashable>(map: [U: T]?, inout jsonObject: JSONObject?) -> JSONObject? {
     return Serialization.convertAndAssign(map, toJSONObject: &jsonObject)
 }
 
+/**
+ 枚举类型的对象会走这里
+ 枚举有原始值的
+ */
 public func --> <T: RawRepresentable where T.RawValue: Serializable>(property: T?, inout jsonObject: JSONObject?) -> JSONObject? {
     return Serialization.convertAndAssign(property, toJSONObject: &jsonObject)
 }
